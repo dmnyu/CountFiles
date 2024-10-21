@@ -5,10 +5,25 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+
+	"github.com/nyudlts/bytemath"
+)
+
+type ProblemER struct {
+	Dir   string
+	Count int
+	Size  int64
+}
+
+var (
+	ProblemERs       = []ProblemER{}
+	totalCount int   = 0
+	totalSize  int64 = 0
+	rootDir    string
 )
 
 func main() {
-	rootDir := os.Args[1]
+	rootDir = os.Args[1]
 	fi, err := os.Stat(rootDir)
 	if err != nil {
 		panic(err)
@@ -23,40 +38,61 @@ func main() {
 		panic(err)
 	}
 
-	entryMap := map[string]int{}
-
 	for _, entry := range entries {
-		if entry.IsDir() {
-			count, err := countFile(filepath.Join(rootDir, entry.Name()))
-			if err != nil {
-				panic(err)
-			}
-			entryMap[entry.Name()] = count
-		}
+		scan(entry)
 	}
 
-	for k, v := range entryMap {
-		if v > 1500 {
-			fmt.Println(k, v)
+	fmt.Println("Total Count:", totalCount)
+	fmt.Println("Total Size:", bytemath.ConvertBytesToHumanReadable(totalSize))
+
+	if len(ProblemERs) > 0 {
+		fmt.Println("Problem ERs")
+		for _, er := range ProblemERs {
+			fmt.Println(er)
 		}
+	} else {
+		fmt.Println("No Problem ERs Found")
 	}
 
 }
 
-func countFile(dir string) (int, error) {
+func scan(entry fs.DirEntry) {
+
+	if entry.IsDir() {
+		fmt.Print("scanning ", entry.Name(), ": ")
+		count, size, err := countFile(filepath.Join(rootDir, entry.Name()))
+		if err != nil {
+			panic(err)
+		}
+
+		totalCount = totalCount + count
+		totalSize = totalSize + size
+
+		if count >= 2000 || size > 214748364800 {
+			ProblemERs = append(ProblemERs, ProblemER{entry.Name(), count, size})
+		}
+
+		fmt.Println("count:", count, "size:", bytemath.ConvertBytesToHumanReadable(size))
+	}
+}
+
+func countFile(dir string) (int, int64, error) {
 	count := 0
+	var size int64 = 0
 
 	err := filepath.Walk(dir, func(path string, info fs.FileInfo, err error) error {
 		if !info.IsDir() {
 			count = count + 1
+			size = size + info.Size()
+
 		}
 		return nil
 	})
 
 	if err != nil {
-		return count, err
+		return count, size, err
 	}
 
-	return count, nil
+	return count, size, nil
 
 }
