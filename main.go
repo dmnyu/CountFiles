@@ -48,7 +48,7 @@ func main() {
 	if len(ProblemERs) > 0 {
 		fmt.Println("Problem ERs")
 		for _, er := range ProblemERs {
-			fmt.Printf("%s count: %d size: %d\n", er.Dir, er.Count, er.Size, bytemath.ConvertBytesToHumanReadable(size))
+			fmt.Printf("%s count: %d size: %d\n", er.Dir, er.Count, bytemath.ConvertBytesToHumanReadable(er.Size))
 		}
 	} else {
 		fmt.Println("No Problem ERs Found")
